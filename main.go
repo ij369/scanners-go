@@ -355,17 +355,15 @@ func sendData(data string) {
 	config.mu.RUnlock()
 
 	jsonStr := []byte(fmt.Sprintf(`{"data":"%s"}`, data))
-
+	
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		fmt.Println("发送数据失败:", err)
-		return
+		// 即使 HTTP 请求失败，WebSocket 也会广播
+	} else {
+		defer resp.Body.Close()
+		fmt.Println("数据发送成功，状态码:", resp.StatusCode)
 	}
-	defer resp.Body.Close()
-
-	fmt.Println("数据发送成功，状态码:", resp.StatusCode)
-
-	// 广播扫码结果
 	broadcast <- data
 }
 

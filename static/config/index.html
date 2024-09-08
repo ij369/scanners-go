@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫码枪配置</title>
+    <link rel="stylesheet" href="/config/styles.css">
+    <script src="/sweetalert2.all.min-10.8.0.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>扫码枪配置</h1>
+        <form id="configForm">
+            <div class="form-group">
+                <label for="forwardURL">转发接口 URL:</label>
+                <input type="text" id="forwardURL" name="forwardURL" required>
+            </div>
+            <div class="form-group">
+                <label for="resetInterval">重置间隔 (毫秒):</label>
+                <input type="number" id="resetInterval" name="resetInterval" required>
+            </div>
+            <div class="form-group">
+                <label for="autoOpenPage">
+                    <input type="checkbox" id="autoOpenPage" name="autoOpenPage">
+                    启动时自动主页
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="showSpecialChars">
+                    <input type="checkbox" id="showSpecialChars" name="showSpecialChars">
+                    显示特殊按键（如 [LSHIFT], [TAB]）
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="showConsole">
+                    <input type="checkbox" id="showConsole" name="showConsole">
+                    显示控制台窗口
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="startOnBoot">
+                    <input type="checkbox" id="startOnBoot" name="startOnBoot">
+                    开机自动启动
+                </label>
+            </div>
+            <button type="submit">保存</button>
+        </form>
+
+        <h2>最近扫码结果</h2>
+        <ul id="scanResults"></ul>
+    </div>
+    <script src="/config/script.js"></script>
+</body>
+
+</html>

@@ -356,14 +356,18 @@ func sendData(data string) {
 
 	jsonStr := []byte(fmt.Sprintf(`{"data":"%s"}`, data))
 	
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
-	if err != nil {
-		fmt.Println("发送数据失败:", err)
-		// 即使 HTTP 请求失败，WebSocket 也会广播
-	} else {
-		defer resp.Body.Close()
-		fmt.Println("数据发送成功，状态码:", resp.StatusCode)
-	}
+	// 发送 POST 请求
+	go func() {
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
+		if err != nil {
+			fmt.Println("发送数据失败:", err)
+		} else {
+			defer resp.Body.Close()
+			fmt.Println("数据发送成功，状态码:", resp.StatusCode)
+		}
+	}()
+
+	// 广播到 WebSocket
 	broadcast <- data
 }
 
@@ -501,6 +505,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	defer ws.Close()
 
 	clients[ws] = true
+
+	// 发送初始连接消息
+	ws.WriteMessage(websocket.TextMessage, []byte("CONNECTED"))
 
 	for {
 		_, _, err := ws.ReadMessage()

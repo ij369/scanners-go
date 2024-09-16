@@ -96,7 +96,7 @@ var (
 		ResetInterval:    500,
 		Port:             8080,
 		AutoOpenPage:     true,
-		ShowSpecialChars: true,
+		ShowSpecialChars: false,
 		ShowConsole:      false,
 		StartOnBoot:      false,
 	}

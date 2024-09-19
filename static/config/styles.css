@@ -1,5 +1,6 @@
 :root {
     --primary-color: #3498db;
+    --primary-color-a: #2980b9;
     --secondary-color: #2c3e50;
     --background-color: #f5f7fa;
     --text-color: #333;
@@ -31,6 +32,10 @@ h2 {
     margin-bottom: 1.5rem;
 }
 
+h2 {
+    margin-top: 3rem;
+}
+
 .form-group {
     margin-bottom: 1.5rem;
     display: flex;
@@ -53,7 +58,8 @@ input[type="number"] {
 }
 
 input[type="text"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+select:focus {
     outline: none;
     border-color: var(--primary-color);
 }
@@ -73,7 +79,7 @@ button {
 }
 
 button:hover {
-    background-color: #2980b9;
+    background-color: var(--primary-color-a);
 }
 
 #scanResults {
@@ -97,10 +103,56 @@ button:hover {
 
 /* 复选框样式 */
 input[type="checkbox"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 3px;
+    outline: none;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    vertical-align: middle;
     margin-right: 0.5rem;
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+input[type="checkbox"]:checked::before {
+    content: '✔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 12px;
+}
+
+input[type="checkbox"]:hover {
+    border-color: var(--primary-color);
 }
 
 input[type="checkbox"]+label {
     display: inline-block;
     vertical-align: middle;
+    cursor: pointer;
+}
+
+.help-text {
+    color: #666;
+    margin: .5rem 0;
+}
+
+select {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    appearance: none;
 }

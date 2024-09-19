@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('showSpecialChars').checked = data.showSpecialChars;
                 document.getElementById('showConsole').checked = data.showConsole;
                 document.getElementById('startOnBoot').checked = data.startOnBoot;
+                document.getElementById('endSuffix').value = data.endSuffix || 'ENTER';
+                document.getElementById('outputRegex').value = data.outputRegex || '';
             });
 
         // 提交表单
@@ -25,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 showSpecialChars: document.getElementById('showSpecialChars').checked,
                 showConsole: document.getElementById('showConsole').checked,
                 startOnBoot: document.getElementById('startOnBoot').checked,
+                endSuffix: document.getElementById('endSuffix').value,
+                outputRegex: document.getElementById('outputRegex').value,
             };
 
             fetch('/api/config', {

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -87,6 +88,8 @@ type Config struct {
 	ShowSpecialChars bool   `json:"showSpecialChars"`
 	ShowConsole      bool   `json:"showConsole"`
 	StartOnBoot      bool   `json:"startOnBoot"`
+	EndSuffix        string `json:"endSuffix"`
+	OutputRegex      string `json:"outputRegex"`
 	mu               sync.RWMutex
 }
 
@@ -99,6 +102,8 @@ var (
 		ShowSpecialChars: false,
 		ShowConsole:      false,
 		StartOnBoot:      false,
+		EndSuffix:        "ENTER",
+		OutputRegex:      "",
 	}
 	configFile string
 )
@@ -213,6 +218,7 @@ func hookCallback(nCode int, wparam, lparam uintptr) uintptr {
 
 		config.mu.RLock()
 		showSpecialChars := config.ShowSpecialChars
+		endSuffix := config.EndSuffix
 		config.mu.RUnlock()
 
 		switch wparam {
@@ -230,10 +236,20 @@ func hookCallback(nCode int, wparam, lparam uintptr) uintptr {
 
 			switch vkCode {
 			case VK_RETURN:
-				if input.Len() > 0 {
+				if endSuffix == "ENTER" && input.Len() > 0 {
 					go sendData(input.String())
 					fmt.Printf("发送数据: %s\n", input.String())
 					input.Reset()
+				} else if showSpecialChars {
+					input.WriteString("[ENTER]")
+				}
+			case VK_TAB:
+				if endSuffix == "TAB" && input.Len() > 0 {
+					go sendData(input.String())
+					fmt.Printf("发送数据: %s\n", input.String())
+					input.Reset()
+				} else if showSpecialChars {
+					input.WriteString("[TAB]")
 				}
 			case VK_SHIFT, VK_LSHIFT, VK_RSHIFT:
 				if vkCode == VK_LSHIFT {
@@ -252,10 +268,6 @@ func hookCallback(nCode int, wparam, lparam uintptr) uintptr {
 					if showSpecialChars {
 						input.WriteString("[SHIFT]")
 					}
-				}
-			case VK_TAB:
-				if showSpecialChars {
-					input.WriteString("[TAB]")
 				}
 			case VK_CAPITAL:
 				capsLockOn = !capsLockOn
@@ -351,8 +363,22 @@ func mapVirtualKey(vkCode uint32) uint16 {
 
 func sendData(data string) {
 	config.mu.RLock()
+	regex := config.OutputRegex
 	url := config.ForwardURL
 	config.mu.RUnlock()
+
+	// 如果设置了正则表达式，进行匹配
+	if regex != "" {
+		matched, err := regexp.MatchString(regex, data)
+		if err != nil {
+			fmt.Println("正则表达式匹配错误:", err)
+			return
+		}
+		if !matched {
+			fmt.Println("数据不匹配正则表达式，不发送")
+			return
+		}
+	}
 
 	jsonStr := []byte(fmt.Sprintf(`{"data":"%s"}`, data))
 	
@@ -372,52 +398,27 @@ func sendData(data string) {
 }
 
 func startWebServer() {
-	// 主页路由
+	// 前端相关路由
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			content, err := staticFiles.ReadFile("static/index.html")
-			if err != nil {
-				http.Error(w, "Home page not found", http.StatusNotFound)
-				return
-			}
-			w.Header().Set("Content-Type", "text/html")
-			w.Write(content)
-			return
+		filePath := strings.TrimPrefix(r.URL.Path, "/")
+		if filePath == "" || strings.HasSuffix(filePath, "/") {
+			filePath += "index.html"
 		}
 
-		// 处理根目录下的其他文件
-		filePath := strings.TrimPrefix(r.URL.Path, "/")
 		content, err := staticFiles.ReadFile("static/" + filePath)
 		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-
-		// 设置 Content-Type
-		contentType := getContentType(filePath)
-		w.Header().Set("Content-Type", contentType)
-		w.Write(content)
-	})
-
-	// 配置页面路由
-	http.HandleFunc("/config/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/config/" {
-			content, err := staticFiles.ReadFile("static/config/index.html")
-			if err != nil {
-				http.Error(w, "Config page not found", http.StatusNotFound)
+			// 如果文件不存在，尝试读取对应目录下的 index.html
+			if strings.HasSuffix(err.Error(), "file does not exist") {
+				indexPath := filepath.Join(filepath.Dir(filePath), "index.html")
+				content, err = staticFiles.ReadFile("static/" + indexPath)
+				if err != nil {
+					http.NotFound(w, r)
+					return
+				}
+			} else {
+				http.NotFound(w, r)
 				return
 			}
-			w.Header().Set("Content-Type", "text/html")
-			w.Write(content)
-			return
-		}
-
-		// 处理 /config/ 下的其他文件
-		filePath := strings.TrimPrefix(r.URL.Path, "/config/")
-		content, err := staticFiles.ReadFile("static/config/" + filePath)
-		if err != nil {
-			http.NotFound(w, r)
-			return
 		}
 
 		contentType := getContentType(filePath)
@@ -550,6 +551,8 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 		config.ShowSpecialChars = newConfig.ShowSpecialChars
 		config.ShowConsole = newConfig.ShowConsole
 		config.StartOnBoot = newConfig.StartOnBoot
+		config.EndSuffix = newConfig.EndSuffix
+		config.OutputRegex = newConfig.OutputRegex
 		// 不更新端口，当前端口可能已经被调整
 		config.mu.Unlock()
 		saveConfig()

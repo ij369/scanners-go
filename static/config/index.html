@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>扫码枪配置</title>
-    <link rel="stylesheet" href="/config/styles.css">
-    <script src="/sweetalert2.all.min-10.8.0.js"></script>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="../sweetalert2.all.min-10.8.0.js"></script>
 </head>
 
 <body>
@@ -24,7 +24,7 @@
             <div class="form-group">
                 <label for="autoOpenPage">
                     <input type="checkbox" id="autoOpenPage" name="autoOpenPage">
-                    启动时自动主页
+                    启动时打开主页
                 </label>
             </div>
             <div class="form-group">
@@ -45,13 +45,25 @@
                     开机自动启动
                 </label>
             </div>
+            <div class="form-group">
+                <label for="endSuffix">结束符后缀:</label>
+                <select id="endSuffix" name="endSuffix">
+                    <option value="ENTER">回车键 (ENTER)</option>
+                    <option value="TAB">制表键 (TAB)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="outputRegex">正则匹配:</label>
+                <input type="text" id="outputRegex" name="outputRegex">
+                <small class="help-text">留空表示匹配所有内容</small>
+            </div>
             <button type="submit">保存</button>
         </form>
 
         <h2>最近扫码结果</h2>
         <ul id="scanResults"></ul>
     </div>
-    <script src="/config/script.js"></script>
+    <script src="./script.js"></script>
 </body>
 
 </html>

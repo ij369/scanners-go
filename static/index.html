@@ -6,17 +6,183 @@
     <meta name="author" content="ij369[https://github.com/ij369]">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>扫码枪转发</title>
-    <link rel="stylesheet" href="/config/styles.css">
+    <link rel="stylesheet" href="./config/styles.css">
 </head>
 
 <body>
     <div class="container">
-        <h1>扫码枪转发器</h1>
-        <p>本项目是一个用于转发扫码枪（条码枪）输入的工具，可以实现无焦点的情况下，将扫码结果转发到 http 服务器，基于 Golang 开发，适用于 Windows ，便于响应 BarCode 或 Qr Code ,
-            开箱即用。
-        </p>
+        <a href="https://github.com/ij369/scanners-go" class="github-corner" aria-label="View source on GitHub">
+            <svg width="80" height="80" viewBox="0 0 250 250"
+                style="fill:#70B7FD; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+                <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+                <path
+                    d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+                    fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+                <path
+                    d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+                    fill="currentColor" class="octo-body"></path>
+            </svg>
+        </a>
 
-        <br />
+        <h1 id='scanners-go-扫码枪转发器'>scanners-go 扫码枪转发器</h1>
+        <p>本项目是一个用于转发扫码枪（条码枪）输入的工具，可以实现无焦点的情况下，将扫码结果转发到 http 服务器，基于 Golang 开发，适用于 Windows ，便于响应 Bar Code 或 Qr Code ,
+            开箱即用。</p>
+        <h2 id='特征'>特征</h2>
+        <ul>
+            <li>扫码枪输入内容不需要扫码枪有串口模式，兼容市面大多数种类扫码枪。</li>
+            <li>通过本项目可以后台无焦点实现监听。</li>
+            <li>转发到后端 http 服务器，支持执行外部命令。</li>
+            <li>使用 Golang 构建后的 exe 体积小，可执行文件约 10M 上下。</li>
+
+        </ul>
+        <h2 id='实现原理'>实现原理</h2>
+        <ol start=''>
+            <li>扫码枪属于 HID 设备，所有字符几乎能在同一瞬间按顺序输入完毕。</li>
+            <li>通常扫码枪在输入完毕后会带回车键作为结束符。</li>
+            <li>正则匹配内容。</li>
+
+        </ol>
+        <p>本程序基于以上三点，实现扫码枪输入的准确识别，几乎不受扫码枪（扫描枪，条码枪）品牌限制。</p>
+        <h2 id='使用指南'>使用指南</h2>
+        <h3 id='基本功能'>基本功能</h3>
+        <p>通常默认就已经适合大多数情况使用了，你可以在 <a href='./config/'>配置页(./config/)</a> 里按照以下表格说明进行更精细的控制，配置页里可以实时生效修改，或者如果你熟悉 json
+            可以直接修改 <strong>config.json</strong> 文件并重新打开生效。</p>
+        <figure class='table-figure'>
+            <table>
+                <thead>
+                    <tr>
+                        <th>设置项</th>
+                        <th>使用说明</th>
+                        <th>Key 值</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>转发接口 URL</td>
+                        <td>默认程序会在后台运行，将识别到的结果以 JSON 对象的格式 POST 给输入的后端 API</td>
+                        <td>forwardURL</td>
+                    </tr>
+                    <tr>
+                        <td>重置间隔 (毫秒)</td>
+                        <td>默认 500ms，可以调到更低，这个取决于扫码枪两个按键之间延迟，超过缓冲时间不会当成是扫码枪录入，会进行重置，用于区分人手和扫码枪，过滤掉人手输入。</td>
+                        <td>resetInterval</td>
+                    </tr>
+                    <tr>
+                        <td>结束符后缀</td>
+                        <td>默认为回车键，即 CR，Enter 键，通常买的扫码枪，出厂都是带回车键作为结束键入的，有的扫码枪说明书可以自定义设置，如果和回车冲突，可以换 [TAB] 作为结尾标志来识别</td>
+                        <td>endSuffix</td>
+                    </tr>
+                    <tr>
+                        <td>启动时打开主页</td>
+                        <td>打开后，在启动时会自动调用浏览器打开主页</td>
+                        <td>autoOpenPage</td>
+                    </tr>
+                    <tr>
+                        <td>显示特殊按键（如 [LSHIFT], [TAB]）</td>
+                        <td>开启后，你需要自己处理扫码枪的组合按键，扫码枪大小写通常是[LSHIFT]+字母，有的扫码枪说明书可以设置</td>
+                        <td>showSpecialChars</td>
+                    </tr>
+                    <tr>
+                        <td>显示控制台窗口</td>
+                        <td>如果你下载的是文件名里有 debug 的，启动时会显示黑色的控制台窗口，可用来调试，debug 版即使关闭也不影响，注意，debug 版如果不打开此项，启动时会瞬时闪一下控制台窗口，非
+                            debug 的版本不会闪。</td>
+                        <td>showConsole</td>
+                    </tr>
+                    <tr>
+                        <td>开机自动启动</td>
+                        <td>打开后，可以开机自启</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>正则匹配</td>
+                        <td>可输入正则表达式，用来加强过滤。<br />例如：<code>ij369/scanners-go</code>可以写作<code>[a-z]{2}\d{3}/[a-z]{8}\-[a-z]{2}</code>
+                            如果留空则会匹配所有内容</td>
+                        <td>outputRegex</td>
+                    </tr>
+                    <tr>
+                        <td>执行动作</td>
+                        <td>开启后，可以在识别后触发额外外部命令，可以实现使用浏览器打开等操作</td>
+                        <td>actions</td>
+                    </tr>
+                </tbody>
+            </table>
+        </figure>
+        <p>除了 http 转发结果到后端接口，如果是纯前端项目，可以监听本 origin 的 Websocket ，端口同应用端口，路径为<code>/ws</code>，可以打开 WebTools 参考如何连接。</p>
+        <h3 id='执行动作'>执行动作</h3>
+        <p>执行动作是指会在发送给后端结果的同时，执行一次外部命令，满足特殊需求。</p>
+        <figure class='table-figure'>
+            <table>
+                <thead>
+                    <tr>
+                        <th>设置项</th>
+                        <th>说明</th>
+                        <th>举例</th>
+                        <th>Key 值</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>命令或可执行文件路径</td>
+                        <td>命令或完整的可执行文件路径</td>
+                        <td>1. <strong>调用 <code>cmd</code></strong>：<code>cmd</code> <br />2. <strong>可执行文件路径</strong>:
+                            <code>C:\Program Files\Google\Chrome\Application\chrome.exe</code>
+                        </td>
+                        <td>command</td>
+                    </tr>
+                    <tr>
+                        <td>数据前缀</td>
+                        <td>可以在扫码结果前加上特定字符串</td>
+                        <td><code>https://github.com/ij369/scanners-go?id=</code></td>
+                        <td>prefix</td>
+                    </tr>
+                    <tr>
+                        <td>数据后缀</td>
+                        <td>可以在扫码结果后加上特定字符串</td>
+                        <td><code>&amp;lang=zh-CN</code></td>
+                        <td>suffix</td>
+                    </tr>
+                    <tr>
+                        <td>命令参数</td>
+                        <td>可以每行一个参数。使用 <code>{data}</code> 表示扫码结果插入位置, <code>{data}</code> 包含前缀和后缀。也可以不包含
+                            <code>{data}</code>.
+                        </td>
+                        <td>1. 执行 <code>cmd</code> 命令<code>/C echo {data} ｜ clip</code> <br>2. Chrome 参数启动
+                            <code>--new-window {data}</code>
+                        </td>
+                        <td>arguments</td>
+                    </tr>
+                </tbody>
+            </table>
+        </figure>
+        <p>占位符</p>
+        <figure class='table-figure'>
+            <table>
+                <thead>
+                    <tr>
+                        <th>占位符</th>
+                        <th>作用</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{timestamp}</td>
+                        <td>用于数据前缀，数据后缀，{timestamp} 的部分会替换成当前的 Unix 时间戳，可用于防止浏览器缓存，例如 <code>&amp;t={timestamp}</code> .
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>{uuid}</td>
+                        <td>用于数据前缀，数据后缀，作用同上，会替换成 4 代 UUID.</td>
+                    </tr>
+                    <tr>
+                        <td>{urlencode}</td>
+                        <td>用于数据前缀，数据后缀，可以使用两个 {urlencode} 包裹 URL 查询参数来实现编码，如果 {urlencode} 的个数为奇数，则最后一个的实现是将其后的部分进行 URI
+                            编码。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </figure>
+        <p>&nbsp;</p>
+        <hr />
         <p>如果本项目对你有帮助的话，欢迎 Fork / Star 本项目</p>
         <p>项目地址</p>
         <a target="_blank"

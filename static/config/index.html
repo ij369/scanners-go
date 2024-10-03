@@ -11,6 +11,7 @@
 
 <body>
     <div class="container">
+        <a class="back-button" href="../">返回</a>
         <h1>扫码枪配置</h1>
         <form id="configForm">
             <div class="form-group">
@@ -55,8 +56,44 @@
             <div class="form-group">
                 <label for="outputRegex">正则匹配:</label>
                 <input type="text" id="outputRegex" name="outputRegex">
-                <small class="help-text">留空表示匹配所有内容</small>
+                <small
+                    class="help-text">例如：<code>ij369/scanners-go</code>可以写作<code>[a-z]{2}\d{3}/[a-z]{8}\-[a-z]{2}</code>
+                    如果留空则会匹配所有内容</small>
             </div>
+
+            <div class="form-group">
+                <label for="actionEnable">
+                    <input type="checkbox" id="actionEnable"
+                        onclick="actionFieldset.disabled=(!actionFieldset.disabled)">
+                    执行命令
+                </label>
+            </div>
+            <fieldset id="actionFieldset" disabled>
+                <div class="form-group">
+                    <label for="actionCommand">命令或可执行文件路径:</label>
+                    <input type="text" id="actionCommand" name="actionCommand">
+                    <small class="help-text">例如：<code>cmd</code> 或
+                        <code>C:\Program Files\Google\Chrome\Application\chrome.exe</code></small>
+                </div>
+                <div class="form-group">
+                    <label for="actionPrefix">数据前缀:</label>
+                    <input type="text" id="actionPrefix" name="actionPrefix">
+                    <small class="help-text">在扫码结果前添加的字符</small>
+                </div>
+                <div class="form-group">
+                    <label for="actionSuffix">数据后缀:</label>
+                    <input type="text" id="actionSuffix" name="actionSuffix">
+                    <small class="help-text">在扫码结果后添加的字符</small>
+                </div>
+                <div class="form-group">
+                    <label for="actionArguments">命令参数:</label>
+                    <textarea id="actionArguments" name="actionArguments" rows="3"></textarea>
+                    <small class="help-text">可以每行一个参数。使用 <code>{data}</code> 表示扫码结果插入位置, <code>{data}</code>
+                        包含前缀和后缀。例如：<br>
+                        <pre><code>--new-window</code><br /><code>{data}</code></pre>
+                    </small>
+                </div>
+            </fieldset>
             <button type="submit">保存</button>
         </form>
 

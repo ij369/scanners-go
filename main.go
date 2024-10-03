@@ -9,7 +9,9 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,6 +21,7 @@ import (
 	"unsafe"
 
 	"github.com/getlantern/systray"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/sys/windows/registry"
@@ -90,7 +93,14 @@ type Config struct {
 	StartOnBoot      bool   `json:"startOnBoot"`
 	EndSuffix        string `json:"endSuffix"`
 	OutputRegex      string `json:"outputRegex"`
-	mu               sync.RWMutex
+	Actions          struct {
+		Prefix     string   `json:"prefix"`
+		Suffix     string   `json:"suffix"`
+		Command    string   `json:"command"`
+		Arguments  []string `json:"arguments"`
+		DataIndex  int      `json:"dataIndex"`
+	} `json:"actions"`
+	mu sync.RWMutex
 }
 
 var (
@@ -365,6 +375,7 @@ func sendData(data string) {
 	config.mu.RLock()
 	regex := config.OutputRegex
 	url := config.ForwardURL
+	actions := config.Actions
 	config.mu.RUnlock()
 
 	// 如果设置了正则表达式，进行匹配
@@ -380,8 +391,25 @@ func sendData(data string) {
 		}
 	}
 
-	jsonStr := []byte(fmt.Sprintf(`{"data":"%s"}`, data))
+	timestamp := fmt.Sprintf("%d", time.Now().Unix()) // 时间戳
+	uuid := uuid.New().String() // UUIDv4
 	
+	processedData := actions.Prefix + data + actions.Suffix // 应用前缀和后缀
+	processedData = strings.ReplaceAll(processedData, "{timestamp}", timestamp)
+	processedData = strings.ReplaceAll(processedData, "{uuid}", uuid)
+
+	processedData = handleURLEncode(processedData) // 处理 {urlencode} 占位符
+
+	jsonData := map[string]string{
+		"data": data,                   // 原始数据
+		"processedData": processedData, // 原始数据加前缀和后缀
+	}
+	jsonStr, err := json.Marshal(jsonData)
+	if err != nil {
+		fmt.Println("JSON 序列化失败:", err)
+		return
+	}
+
 	// 发送 POST 请求
 	go func() {
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonStr))
@@ -393,8 +421,72 @@ func sendData(data string) {
 		}
 	}()
 
+	// 执行外部命令
+	if actions.Command != "" {
+		go executeCommand(actions.Command, actions.Arguments, actions.DataIndex, processedData)
+	}
+
 	// 广播到 WebSocket
 	broadcast <- data
+}
+
+func handleURLEncode(data string) string {
+	var result strings.Builder
+	start := 0
+	for {
+		startIndex := strings.Index(data[start:], "{urlencode}")
+		if startIndex == -1 {
+			result.WriteString(data[start:])
+			break
+		}
+		startIndex += start
+		result.WriteString(data[start:startIndex])
+		endIndex := strings.Index(data[startIndex+len("{urlencode}"):], "{urlencode}")
+		if endIndex == -1 {
+			// 如果找不到下一个 {urlencode}，则其后的部分进行 URI 编码
+			toEncode := data[startIndex+len("{urlencode}"):]
+			result.WriteString(url.QueryEscape(toEncode))
+			break
+		}
+		endIndex += startIndex + len("{urlencode}")
+		toEncode := data[startIndex+len("{urlencode}"):endIndex]
+		result.WriteString(url.QueryEscape(toEncode))
+		start = endIndex + len("{urlencode}")
+	}
+	return result.String()
+}
+
+func executeCommand(command string, args []string, dataIndex int, data string) {
+	command = filepath.Clean(command)
+	
+	// 创建一个新的参数切片，将扫码结果插入到指定位置
+	newArgs := make([]string, 0, len(args))
+	for _, arg := range args {
+		// 替换参数中的 {data} 占位
+		arg = strings.TrimSpace(strings.ReplaceAll(arg, "{data}", data))
+		if arg != "" {
+			newArgs = append(newArgs, arg)
+		}
+	}
+
+	fmt.Printf("执行命令: %s\n", command)
+	fmt.Printf("执行参数: %v\n", newArgs)
+
+	// 使用 exec.Command 执行命令
+	cmd := exec.Command(command, newArgs...)
+
+	// 设置工作目录为当前可执行文件所在目录
+	exePath, err := os.Executable()
+	if err == nil {
+		cmd.Dir = filepath.Dir(exePath)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		fmt.Printf("执行命令失败: %v\n", err)
+	} else {
+		fmt.Println("命令执行成功")
+	}
 }
 
 func startWebServer() {
@@ -553,6 +645,7 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 		config.StartOnBoot = newConfig.StartOnBoot
 		config.EndSuffix = newConfig.EndSuffix
 		config.OutputRegex = newConfig.OutputRegex
+		config.Actions = newConfig.Actions
 		// 不更新端口，当前端口可能已经被调整
 		config.mu.Unlock()
 		saveConfig()

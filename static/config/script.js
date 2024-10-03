@@ -15,6 +15,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('startOnBoot').checked = data.startOnBoot;
                 document.getElementById('endSuffix').value = data.endSuffix || 'ENTER';
                 document.getElementById('outputRegex').value = data.outputRegex || '';
+
+                document.getElementById('actionPrefix').value = data.actions.prefix || '';
+                document.getElementById('actionSuffix').value = data.actions.suffix || '';
+                document.getElementById('actionCommand').value = data.actions.command || '';
+                document.getElementById('actionArguments').value = data.actions.arguments ? data.actions.arguments.join('\n') : '';
+                document.getElementById('actionEnable').checked = data.actions.command !== '';
+                document.getElementById('actionFieldset').disabled = !document.getElementById('actionEnable').checked;
             });
 
         // 提交表单
@@ -30,6 +37,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 endSuffix: document.getElementById('endSuffix').value,
                 outputRegex: document.getElementById('outputRegex').value,
             };
+
+            if (document.getElementById('actionEnable').checked) {
+                formData.actions = {
+                    prefix: document.getElementById('actionPrefix').value,
+                    suffix: document.getElementById('actionSuffix').value,
+                    command: document.getElementById('actionCommand').value,
+                    arguments: document.getElementById('actionArguments').value
+                        .split('\n')
+                        .map(arg => arg.trim())
+                        .filter(arg => arg !== ''),
+                    dataIndex: document.getElementById('actionArguments').value
+                        .split('\n')
+                        .findIndex(arg => arg.includes('{data}')),
+                };
+            }
 
             fetch('/api/config', {
                 method: 'POST',
@@ -74,34 +96,82 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // WebSocket 连接（在主页和配置页都需要）
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(protocol + '//' + window.location.host + '/ws');
-    const scanResults = document.getElementById('scanResults');
-
-    if (scanResults) {
-        const maxResults = 10;
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(protocol + '//' + window.location.host + '/ws');
+        const scanResults = document.getElementById('scanResults');
 
         socket.onmessage = function (event) {
             const li = document.createElement('li');
             li.textContent = event.data;
+            Swal.fire({
+                title: event.data,
+                icon: 'success',
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end',
+                timerProgressBar: event.data !== 'CONNECTED',
+                timer: 3000
+            });
             scanResults.insertBefore(li, scanResults.firstChild);
 
             // 保持最多显示 10 条结果
-            while (scanResults.children.length > maxResults) {
+            while (scanResults.children.length > 10) {
                 scanResults.removeChild(scanResults.lastChild);
             }
         };
+
+        socket.onerror = function (error) {
+            console.error('WebSocket 错误:', error);
+        };
+
+        socket.onclose = function () {
+            console.debug('WebSocket 连接已关闭');
+            Swal.fire({
+                icon: 'error',
+                title: 'WebSocket 连接已关闭',
+                timer: 5000,
+                toast: true,
+                showConfirmButton: false,
+                position: 'top-end',
+            });
+
+            // 每隔 5 秒尝试重新连接
+            const retryInterval = setInterval(() => {
+                console.debug('尝试重新连接 WebSocket...');
+                const newSocket = new WebSocket(protocol + '//' + window.location.host + '/ws');
+
+                newSocket.onopen = function () {
+                    console.log('WebSocket 重新连接成功');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'WebSocket 重新连接成功',
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end',
+                        timer: 3000
+                    });
+                    clearInterval(retryInterval);
+                    // 重新绑定事件处理程序
+                    newSocket.onmessage = socket.onmessage;
+                    newSocket.onerror = socket.onerror;
+                    newSocket.onclose = socket.onclose;
+                };
+
+                newSocket.onerror = function (error) {
+                    console.error('WebSocket 重新连接错误:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'WebSocket 连接已关闭, 正在尝试连接...',
+                        timer: 5000,
+                        toast: true,
+                        showConfirmButton: false,
+                        position: 'top-end',
+                    });
+                };
+            }, 5000);
+        };
     }
 
-    socket.onerror = function (error) {
-        console.error('WebSocket 错误:', error);
-    };
-
-    socket.onclose = function () {
-        console.log('WebSocket 连接已关闭');
-        Swal.fire({
-            icon: 'error',
-            title: 'WebSocket 连接已关闭',
-        });
-    };
+    connectWebSocket();
 });

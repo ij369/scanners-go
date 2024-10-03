@@ -25,6 +25,47 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+a.back-button {
+    text-decoration: none;
+    display: inline-block;
+    padding: .3rem 0;
+    padding-right: 2rem;
+    color: #999;
+    background: transparent;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+a.back-button::before {
+    content: "<";
+    font-size: .6rem;
+    position: absolute;
+    left: -1rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+a.back-button:hover::before {
+    opacity: 1;
+    padding: 1rem;
+    left: -1rem;
+}
+
+a.back-button:hover {
+    color: #000;
+    padding: .3rem 1rem;
+    font-weight: 500;
+}
+
+label,
+button,
+select,
+a.back-button {
+    user-select: none;
+}
+
 h1,
 h2 {
     color: var(--secondary-color);
@@ -34,6 +75,10 @@ h2 {
 
 h2 {
     margin-top: 3rem;
+}
+
+h3 {
+    color: var(--primary-color);
 }
 
 .form-group {
@@ -49,7 +94,9 @@ label {
 }
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+textarea,
+select {
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
@@ -59,6 +106,7 @@ input[type="number"] {
 
 input[type="text"]:focus,
 input[type="number"]:focus,
+textarea:focus,
 select:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -149,10 +197,139 @@ input[type="checkbox"]+label {
 }
 
 select {
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M4 4l2 2 2-2z' fill='gray'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+
+fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+fieldset[disabled] {
+    opacity: .5;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 3rem;
+}
+
+code,
+pre {
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    color: #333;
+}
+
+code {
+    padding: 0.2em 0.4em;
+}
+
+pre {
+    padding: .6rem;
+    border: 1px solid #ddd;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+}
+
+.github-corner:hover .octo-arm {
+    animation: octocat-wave 560ms ease-in-out
+}
+
+@keyframes octocat-wave {
+
+    0%,
+    100% {
+        transform: rotate(0)
+    }
+
+    20%,
+    60% {
+        transform: rotate(-25deg)
+    }
+
+    40%,
+    80% {
+        transform: rotate(10deg)
+    }
+}
+
+@media (max-width:500px) {
+    .github-corner:hover .octo-arm {
+        animation: none
+    }
+
+    .github-corner .octo-arm {
+        animation: octocat-wave 560ms ease-in-out
+    }
+}
+
+.table-figure {
+    font-size: 0.875rem;
+    margin: 1rem 0;
+    color: #333;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+th,
+td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #333;
+}
+
+th:first-child {
+    min-width: 5rem;
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+}
+
+@media (max-width:960px) {
+    h1 {
+        margin-bottom: 3rem;
+        transition: all 0.3s ease;
+    }
+
+    .container {
+        max-width: 100%;
+        margin: 0;
+        transition: all 0.3s ease;
+    }
+}
+
+@media (max-width: 600px) {
+    table {
+        font-size: 0.9rem;
+    }
+
+    th,
+    td {
+        padding: 0.5rem;
+    }
 }
